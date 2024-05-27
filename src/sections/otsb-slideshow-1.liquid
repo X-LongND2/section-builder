@@ -315,18 +315,23 @@
                   {%- if block.settings.button_label_1 != blank or block.settings.button_label_2 != blank -%}
                     <div class="mt-4 lg:mt-9 inline-flex flex-wrap gap-x-1.5 gap-y-2 p-break-words{% if block.settings.content_alignment == 'custom' or block.settings.content_alignment contains 'center' %} justify-center{% else %} justify-{{ alignment[1] }}{% endif %}" {{ block.shopify_attributes }}>
                       {%- liquid
-                        case block.settings.button_style
+                        case block.settings.button_type
                           when 'rounded'
                             assign borderRadius = '100px'
                           when 'rounded_corners'
                             assign borderRadius = '6px'
+                          when 'mixed'
+                            assign borderRadius = '6px 0 6px 0'
                           else
                             assign borderRadius = '0'
                         endcase
                       %}
 
                       {% style %}
-                        {% if block.settings.primary_button_animation == 'sliced' %}
+                        .x-slideshow-{{ block.id }} .otsb-button {
+                          border-radius: {{borderRadius}};
+                        }
+                        {% if block.settings.button_animation == 'sliced' %}
                           .x-slideshow-{{ block.id }} .otsb-button.otsb-button-outline:not(.not-icon),
                           .x-slideshow-{{ block.id }} .otsb-button.otsb-button-solid:not(.not-icon) {
                             display: inline-flex;
@@ -365,8 +370,7 @@
                             color: rgb(var(--colors-button-text-hover));
                             background-origin: border-box;
                           }
-                        {% endif %}
-                        {% if block.settings.primary_button_animation == 'underline' %}
+                        {% elsif block.settings.button_animation == 'underline' %}
                           .x-slideshow-{{ block.id }} .otsb-button-solid .otsb-button-text {
                             position: relative;
                             display: block;
@@ -402,13 +406,13 @@
                         {% endif %}
                       {% endstyle %}
                       {%- if block.settings.button_label_1 != blank -%}
-                        <a style="border-radius: {{borderRadius}};" {% if block.settings.button_link_1 %} href="{{ block.settings.button_link_1 }}"{% if block.settings.open_new_window_button %} target="_blank"{% endif %}{% else %} role="link" aria-disabled="true"{% endif %} class="otsb-button button--{{ block.id }}{% if block.settings.button_primary_1 %} otsb-button-solid{% else %} otsb-button-outline{% endif %} border ml-0.5 mr-0.5 mt-0.5 mb-0.5 empty:otsb-hidden pl-6 pr-6 lg:pl-9 lg:pr-9 pt-2.5 pb-2.5 md:pt-3 md:pb-3 leading-normal{% unless block.settings.button_link_1 %} hover:cursor-not-allowed opacity-70{% endunless %}">
-                          {% render 'otsb-button-label', button_animation: block.settings.primary_button_animation, button_label: block.settings.button_label_1, show_button_primary: block.settings.button_primary_1 %}
+                        <a {% if block.settings.button_link_1 %} href="{{ block.settings.button_link_1 }}"{% if block.settings.open_new_window_button %} target="_blank"{% endif %}{% else %} role="link" aria-disabled="true"{% endif %} class="otsb-button button--{{ block.id }}{% if block.settings.button_primary_1 %} otsb-button-solid{% else %} otsb-button-outline{% endif %} border ml-0.5 mr-0.5 mt-0.5 mb-0.5 empty:otsb-hidden pl-6 pr-6 lg:pl-9 lg:pr-9 pt-2.5 pb-2.5 md:pt-3 md:pb-3 leading-normal{% unless block.settings.button_link_1 %} hover:cursor-not-allowed opacity-70{% endunless %}">
+                          {% render 'otsb-button-label', button_animation: block.settings.button_animation, custom_icon_button: block.settings.custom_icon_button, button_label: block.settings.button_label_1, show_button_primary: block.settings.button_primary_1 %}
                         </a> 
                       {%- endif -%}
                       {%- if block.settings.button_label_2 != blank -%}
-                        <a style="border-radius: {{borderRadius}};" {% if block.settings.button_link_2 %} href="{{ block.settings.button_link_2 }}"{% if block.settings.open_new_window_button_2 %} target="_blank"{% endif %}{% else %} role="link" aria-disabled="true"{% endif %} class="otsb-button button--{{ block.id }}{% if block.settings.button_primary_2 %} otsb-button-solid{% else %} otsb-button-outline{% endif %} border ml-0.5 mr-0.5 mt-0.5 mb-0.5 empty:otsb-hidden pl-6 pr-6 lg:pl-9 lg:pr-9 pt-2.5 pb-2.5 md:pt-3 md:pb-3 leading-normal{% unless block.settings.button_link_2 %} hover:cursor-not-allowed opacity-70{% endunless %}">
-                          {% render 'otsb-button-label', button_animation: block.settings.primary_button_animation, button_label: block.settings.button_label_2, show_button_primary: block.settings.button_primary_2 %}
+                        <a {% if block.settings.button_link_2 %} href="{{ block.settings.button_link_2 }}"{% if block.settings.open_new_window_button_2 %} target="_blank"{% endif %}{% else %} role="link" aria-disabled="true"{% endif %} class="otsb-button button--{{ block.id }}{% if block.settings.button_primary_2 %} otsb-button-solid{% else %} otsb-button-outline{% endif %} border ml-0.5 mr-0.5 mt-0.5 mb-0.5 empty:otsb-hidden pl-6 pr-6 lg:pl-9 lg:pr-9 pt-2.5 pb-2.5 md:pt-3 md:pb-3 leading-normal{% unless block.settings.button_link_2 %} hover:cursor-not-allowed opacity-70{% endunless %}">
+                          {% render 'otsb-button-label', button_animation: block.settings.button_animation, custom_icon_button: block.settings.custom_icon_button, button_label: block.settings.button_label_2, show_button_primary: block.settings.button_primary_2 %}
                         </a> 
                       {%- endif -%}
                     </div>
@@ -779,46 +783,6 @@
           "label": "Text"
         },
         {
-          "type": "select",
-          "id": "button_style",
-          "options": [
-            {
-              "value": "square",
-              "label": "Square"
-            },
-            {
-              "value": "rounded",
-              "label": "Rounded"
-            },
-            {
-              "value": "rounded_corners",
-              "label": "Rounded corners"
-            }
-          ],
-          "default": "square",
-          "label": "Button style"
-        },
-        {
-          "type": "select",
-          "id": "primary_button_animation",
-          "options": [
-            {
-              "value": "slide",
-              "label": "Slide"
-            },
-            {
-              "value": "sliced",
-              "label": "Slided with icon"
-            },
-            {
-              "value": "underline",
-              "label": "Underline"
-            }
-          ],
-          "default": "slide",
-          "label": "Primary button hover animation"
-        },
-        {
           "type": "text",
           "id": "button_label_1",
           "default": "Button Label",
@@ -953,6 +917,80 @@
               "label": "Right"
             }
           ]
+        },
+        {
+          "type": "header",
+          "content": "Design"
+        },
+        {
+          "type": "select",
+          "id": "button_type",
+          "options": [
+            {
+              "value": "square",
+              "label": "Square"
+            },
+            {
+              "value": "rounded",
+              "label": "Rounded"
+            },
+            {
+              "value": "rounded_corners",
+              "label": "Rounded corners"
+            },
+            {
+              "value": "mixed",
+              "label": "Mixed"
+            }
+          ],
+          "default": "square",
+          "label": "Button style"
+        },
+        {
+          "type": "select",
+          "id": "button_color_mobile",
+          "options": [
+            {
+              "value": "button_hover_color",
+              "label": "Use button hover color"
+            },
+            {
+              "value": "button_color",
+              "label": "Use button hover color"
+            }
+          ],
+          "label": "Mobile primary button style",
+          "default": "button_hover_color"
+        },
+        {
+          "type": "select",
+          "id": "button_animation",
+          "options": [
+            {
+              "value": "slide",
+              "label": "Slide"
+            },
+            {
+              "value": "fill_up",
+              "label": "Fill up"
+            },
+            {
+              "value": "sliced",
+              "label": "Slided with icon"
+            },
+            {
+              "value": "underline",
+              "label": "Underline"
+            }
+          ],
+          "default": "slide",
+          "label": "Primary button hover animation"
+        },
+        {
+          "type": "html",
+          "id": "custom_icon_button",
+          "label": "Custom icon (SVG code)",
+          "info": "Applies to 'Sliced with icon' animation type."
         },
         {
           "type": "header",

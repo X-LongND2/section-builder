@@ -1,0 +1,648 @@
+{%- liquid
+  assign heading_size =  section.settings.heading_size | times: 100 | times: 0.000225
+  assign sub_heading =  section.settings.title_size | times: 100 | times: 0.0000875
+  assign sub_heading_mobile = sub_heading | times: 0.75
+  if section.settings.columns_mobile == '1'
+    assign sub_heading_mobile = sub_heading | times: 0.85
+  endif
+  if section.settings.show_date or section.settings.show_author or section.settings.show_comment_counts
+    assign class_margin = " mt-5"
+  endif
+
+  assign columns_desktop = section.settings.columns_desktop | plus: 0
+  assign enable_desktop_slider = section.settings.enable_desktop_slider
+  assign swiper_on_mobile = section.settings.swiper_on_mobile
+  assign blog_posts = section.settings.post_limit
+  if section.settings.blog.articles_count > 0 and section.settings.post_limit > section.settings.blog.articles_count
+    assign blog_posts = section.settings.blog.articles_count
+  endif
+
+  if blog_posts <= columns_desktop and blog_posts != 0
+    assign enable_desktop_slider = false
+  endif
+
+  if blog_posts <= 1 and blog_posts != 0
+    assign swiper_on_mobile = false
+  endif
+
+  assign disable_divider = true
+  if section.settings.show_tag
+    assign disable_divider = false
+  endif
+   
+  if enable_desktop_slider 
+    assign class_slider = " splide__slide x-splide-slide preload-slide--" | append: section.id
+  else
+    assign class_slider = " splide__slide x-splide-slide"
+  endif
+-%} 
+{%- style -%}
+  .heading--{{ section.id }}{
+    font-size: {{ heading_size | times : 0.6 }}rem;
+  } 
+  .sub_heading--{{ section.id }}{
+    font-size: {{ sub_heading_mobile }}rem;
+  } 
+  @media screen and (max-width: 767px) {
+  .gap-mobile-{{ section.id }} {
+      gap: {{ section.settings.spacing_mobile }}px;
+    }
+  }
+  @media (min-width: 768px) {
+    .heading--{{ section.id }}{
+      font-size: {{ heading_size }}rem;
+    } 
+    .sub_heading--{{ section.id }}{ 
+      font-size: {{ sub_heading }}rem;
+    } 
+    .gap-{{ section.id }} {
+      gap: {{ section.settings.spacing }}px;
+    }
+    .preload-slide--{{ section.id }} {
+      {% if settings.lang_direction contains request.locale.iso_code %} 
+        margin-left: {{ section.settings.spacing }}px;
+      {% else %}
+        margin-right: {{ section.settings.spacing }}px;
+      {% endif %}
+      width: calc(((100% + {{ section.settings.spacing }}px) / 3) - {{ section.settings.spacing }}px);
+    }
+    .gap-{{ section.id }} {
+      {% if enable_desktop_slider %}
+        gap: 0px;
+      {% else %}
+        gap: {{ section.settings.spacing }}px;
+      {% endif %}
+    }
+  }
+  @media (min-width: 1024px){
+    .preload-slide--{{ section.id }} {
+      width: calc(((100% + {{ section.settings.spacing }}px) / {{ columns_desktop }}) - {{ section.settings.spacing }}px);
+    }
+  }
+{%- endstyle -%}
+
+{% render 'otsb-section-divider' %}
+
+<div class="pt-[{{ section.settings.padding_top_mobile }}px] md:pt-[{{ section.settings.padding_top }}px] pb-[{{ section.settings.padding_bottom_mobile }}px] md:pb-[{{ section.settings.padding_bottom }}px]">
+  <div class="{% unless section.settings.full_width %} otsb-page-width{% endunless %} pl-5 pr-5 mx-auto mb-5 lg:mb-10{% unless section.settings.heading_alignment contains 'center' %} flex items-center{% endunless %} otsb-heading-{{ section.settings.heading_alignment }}"> 
+    {%- if section.settings.heading != blank -%}
+      <{{ section.settings.heading_tag }} class="heading--{{ section.id }} section-header otsb-h2 block leading-tight flex-auto otsb-p-break-words">
+        {{ section.settings.heading | escape }}
+      </{{ section.settings.heading_tag }}>
+    {%- endif -%}
+    {%- if section.settings.show_view_all and section.settings.blog != blank and section.settings.view_all_position == 'top' -%}
+      <div class="flex justify-center pt-0.5 pb-0.5 md:pb-2.5 md:pt-2.5">
+        <a{% if section.settings.blog != blank %} href="{{ section.settings.blog.url }}"{% else %} role="link" aria-disabled="true"{% endif %} 
+          class="nav-link font-medium effect-inline relative flex items-center hover-text-link empty:otsb-hidden cursor-pointer">
+          {{ 'View all posts' }}<span class="w-2 h-2 inline-block ml-1.5 mt-0.5 rtl:rotate-180 rtl:mr-1.5 rtl:ml-0 rtl:mt-0">{% render 'otsb-icon-alls' , icon: 'icon-double-arrow' %}</span>
+        </a>
+      </div>
+    {%- endif -%}
+  </div>
+  <div class="mx-auto{% if swiper_on_mobile %} carousel-mobile otsb-full-width-mobile{% endif %}{% if enable_desktop_slider %} carousel-tablet{% endif %}{% if section.settings.full_width %} otsb-full-width{% else %} otsb-page-width{% endif %}">
+    <div
+      id="x-blogs-{{ section.id }}"
+      class="blogs{% if enable_desktop_slider or swiper_on_mobile %} x-splide splide visible{% endif %}"
+      {% if enable_desktop_slider or swiper_on_mobile -%}
+        x-data
+        x-data-slider="{{ section.id }}"
+        x-cloak
+        x-intersect.once.margin.200px='$store.xSplide.load($el, {
+          "speed": 1000,
+          "pagination": false, 
+          "mediaQuery": "min",
+          "updateOnMove": "true",
+          "pauseOnHover": true,
+          "pauseOnFocus": false,
+          {%- if settings.lang_direction contains request.locale.iso_code %} 
+            "direction": "rtl",
+          {%- endif %}
+          {%- if section.settings.auto_play -%}
+            "rewind": true,
+            "autoplay": true,
+            "interval": {{ section.settings.change_slides_speed | times: 1000 }},
+          {%- endif %}
+          "progressBar": {{ columns_desktop }},
+          "breakpoints": {
+            300: {
+              {% if swiper_on_mobile == false -%}
+                "destroy": true,
+              {%- endif -%}
+              "gap": "{{ section.settings.spacing_mobile }}px",
+              "padding": { "left": 20, "right": 20 },
+              "perPage": 1
+            },
+            768: {
+              {% if enable_desktop_slider == false -%}
+                "destroy": true,
+              {%- else -%}
+                "destroy": false,
+              {%- endif %}
+              "perPage": 3
+            },
+            1024: {
+              "perPage": {{ columns_desktop }},
+              "padding": 0,
+              "gap": "{{ section.settings.spacing }}px",
+            }
+          },
+          "classes": {
+            "arrows": "splide__arrows block", 
+          },
+          "events": [
+            {
+              "event": "ready",
+              "callback": () => {
+                document.dispatchEvent(new CustomEvent("eurus:{{ section.id }}:splide-ready"));
+              }
+            }
+          ]
+        })'
+      {%- endif -%}>
+      <div class="splide__track{% if enable_desktop_slider %} md:cursor-grab{% endif %}">
+        <div class="splide__list{% if enable_desktop_slider %} md:grid-cols-none md:flex md:w-full md:gap-0{% else %} md:otsb-grid lg:grid-cols-{{ section.settings.columns_desktop }} md:grid-cols-3 gap-{{ section.id }}{% endif %}{% if swiper_on_mobile %} flex w-full{% else %} otsb-grid grid-cols-1 gap-mobile-{{ section.id }}{% endif %}">
+          {%- if section.settings.blog != blank and section.settings.blog.articles_count > 0 -%}
+            {%- for article in section.settings.blog.articles limit: section.settings.post_limit -%}
+              {%- render 'otsb-article-card',
+                class_slide: class_slider,
+                blog: section.settings.blog,
+                article: article,
+                image_desktop_top: true,
+                columns_desktop: section.settings.columns_desktop,
+                columns_mobile: section.settings.columns_mobile | plus: 0,
+                class_margin: class_margin, 
+                show_image: section.settings.show_image,
+                item_secondary_background: section.settings.item_secondary_background,
+                image_ratio: section.settings.image_ratio,
+                show_name: section.settings.show_name,
+                show_author: section.settings.show_author,
+                show_comment_counts: section.settings.show_comment_counts,
+                show_date: section.settings.show_date,
+                show_excerpt: section.settings.show_excerpt,
+                show_tag: section.settings.show_tag,
+                enable_desktop_slider: enable_desktop_slider,
+                swiper_on_mobile: swiper_on_mobile,
+                content_alignment: section.settings.content_alignment,
+                disable_divider: disable_divider,
+                show_read_more: section.settings.show_read_more,
+                button_read_more_label: section.settings.button_read_more_label
+              -%}
+            {%- endfor -%}
+          {%- else %}
+            {%- for i in (1..section.settings.post_limit) -%}
+              {% if section.settings.columns_mobile == "2" %}
+                <div class="{{ class_slider }} flex md:block md:border-b{% if settings.edges_type == 'rounded_corners' %} overflow-hidden rounded-[10px]{% endif %}">
+                  <div class="text-[#acacac] w-1/3 md:w-full{% if settings.edges_type == 'rounded_corners' %} overflow-hidden rounded-[10px]{% endif %}">
+                    {{ 'image' | placeholder_svg_tag: 'bg-[#c9c9c9]' }}
+                  </div>
+                  <div class="w-2/3 pr-0 md:pl-0 md:pt-5 md:pb-5 float-left md:w-auto md:float-none pl-5">
+                {%- else -%}
+                  <div class="{{ class_slider }} md:border-b{% if settings.edges_type == 'rounded_corners' %} overflow-hidden rounded-[10px]{% endif %}">
+                    <div class="text-[#acacac] w-full{% if settings.edges_type == 'rounded_corners' %} overflow-hidden rounded-[10px]{% endif %}">
+                      {{ 'image' | placeholder_svg_tag: 'bg-[#c9c9c9]' }}
+                    </div>
+                    <div class="pt-5 pb-5">
+                {%- endif -%}
+                  <p class="sub_heading--{{ section.id }} inline-block capitalize leading-tight mb-3">
+                    {{ 'Blog post' }}
+                  </p>
+                  <p class="text-xs tracking-wider">
+                    {{ 'on Jul 17, 2022' }}
+                  </p>
+                  <p class="mt-5 leading-tight">
+                    {{ 'Give your customers a summary of your blog post' }}
+                  </p>
+                </div>
+              </div>
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+      </div>
+      {%- if enable_desktop_slider -%}
+        <div class="lg:flex items-center otsb-hidden mt-2">
+          <div class="splide-progress inline-block grow">
+            <div class="splide-progress-bar"> </div>
+          </div>
+          <div class="splide__arrows lg:inline-flex ml-5 otsb-hidden">
+            <button class="splide__arrow splide__arrow--prev otsb-hidden lg:block none_border z-10 w-6 h-6 after:text-[20px]{% if settings.lang_direction contains request.locale.iso_code %} mr-2{% else %} -rotate-180{% endif %} duration-200 opacity-60 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed" aria-label="previous slide">
+              {% render 'otsb-icon-alls', icon: 'icon-arrow' %}
+            </button>
+            <button class="splide__arrow splide__arrow--next otsb-hidden lg:block none_border z-10 w-6 h-6 after:text-[20px]{% if settings.lang_direction contains request.locale.iso_code %} -rotate-180{% endif %} ml-2 duration-200 opacity-60 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed" aria-label="previous slide">
+              {% render 'otsb-icon-alls', icon: 'icon-arrow' %}
+            </button>
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+  {%- if section.settings.show_view_all and section.settings.blog != blank and section.settings.view_all_position == 'bottom' -%}
+    <div class="flex justify-center pt-0.5 pb-0.5 md:pb-2.5 md:pt-2.5 mt-6 lg:mt-8">
+      <a{% if section.settings.blog != blank %} href="{{ section.settings.blog.url }}"{% else %} role="link" aria-disabled="true"{% endif %} 
+        class="nav-link font-medium effect-inline relative flex items-center hover-text-link empty:otsb-hidden cursor-pointer">
+        {{ 'View all posts' }}<span class="w-2 h-2 inline-block ml-1.5 mt-0.5">{% render 'otsb-icon-alls' , icon: 'icon-double-arrow' %}</span>
+      </a>
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "OT: Blog posts #1",
+  "tag": "section",
+  "class": "section section-featured-blog x-section",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "aside"
+    ]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "default": "Blog posts",
+      "label": "Heading"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 50,
+      "max": 200,
+      "unit": "%",
+      "step": 10,
+      "default": 100,
+      "label": "Heading size"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "default": "h2",
+      "label": "Heading tag",
+      "options": [
+        {
+          "value": "h1",
+          "label": "H1"
+        },
+        {
+          "value": "h2",
+          "label": "H2"
+        },
+        {
+          "value": "h3",
+          "label": "H3"
+        },
+        {
+          "value": "h4",
+          "label": "H4"
+        },
+        {
+          "value": "h5",
+          "label": "H5"
+        },
+        {
+          "value": "h6",
+          "label": "H6"
+        },
+        {
+          "value": "p",
+          "label": "p"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "default": "center",
+      "label": "Heading alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "post_limit",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 3,
+      "label": "Blog posts"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Number of columns on desktop"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "default": false,
+      "label": "Show \"View all\" button"
+    },
+    {
+      "type": "select",
+      "id": "view_all_position",
+      "default": "top",
+      "label": "\"View all\" button position",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Blog items"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "min": 50,
+      "max": 200,
+      "step": 10,
+      "unit": "%",
+      "default": 140,
+      "label": "Title size"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "default": "left",
+      "label": "Content alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "default": true,
+      "label": "Show featured image"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Natural"
+        },
+        {
+          "value": "100",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "75",
+          "label": "Landscape (4:3)"
+        },
+        {
+          "value": "150",
+          "label": "Portrait (2:3)"
+        },
+        {
+          "value": "56",
+          "label": "Wide (16:9)"
+        },
+        {
+          "value": "133",
+          "label": "Standard (3:4)"
+        }
+      ],
+      "default": "75",
+      "label": "Image ratio"
+    },
+    {
+      "type": "checkbox",
+      "id": "item_secondary_background",
+      "default": false,
+      "label": "Items secondary background"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "default": true,
+      "label": "Show author"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_name",
+      "default": false,
+      "label": "Show blog"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "default": true,
+      "label": "Show date"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "default": true,
+      "label": "Show excerpt"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tag",
+      "default": true,
+      "label": "Show tags and lines"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_comment_counts",
+      "default": true,
+      "label": "Show comment counts"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_read_more",
+      "default": false,
+      "label": "Show button read now"
+    },
+    {
+      "type": "text",
+      "id": "button_read_more_label",
+      "default": "READ NOW",
+      "label": "Button read now label"
+    },
+    {
+      "type": "header",
+      "content": "Carousel"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_desktop_slider",
+      "label": "Enable carousel on desktop",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "swiper_on_mobile",
+      "default": false,
+      "label": "Enable swipe on mobile"
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_play",
+      "label": "Enable auto-play",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "change_slides_speed",
+      "min": 5,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Change slides every",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Desktop layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "default": false,
+      "label": "Make section full width"
+    },
+    {
+      "type": "range",
+      "id": "spacing",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 28,
+      "label": "Block spacing"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show section divider"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "unit": "px",
+      "step": 4,
+      "default": 28,
+      "label": "Top padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "unit": "px",
+      "step": 4,
+      "default": 28,
+      "label": "Bottom padding"
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "options": [
+        {
+          "value": "1",
+          "label": "Image top"
+        },
+        {
+          "value": "2",
+          "label": "Image left"
+        }
+      ],
+      "default": "1",
+      "label": "Mobile layout"
+    },
+    {
+      "type": "range",
+      "id": "spacing_mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 28,
+      "label": "Block spacing"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider_mobile",
+      "default": false,
+      "label": "Show section divider"
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "min": 0,
+      "max": 100,
+      "unit": "px",
+      "step": 4,
+      "default": 28,
+      "label": "Top padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "min": 0,
+      "max": 100,
+      "unit": "px",
+      "step": 4,
+      "default": 28,
+      "label": "Bottom padding"
+    }
+  ],
+  "presets": [
+    {
+      "name": "OT: Blog posts #1",
+      "settings": {
+        "blog": "News"
+      }
+    }
+  ]
+}
+{% endschema %}

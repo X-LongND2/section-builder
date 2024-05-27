@@ -30,8 +30,7 @@ effect-inline
 carousel-mobile
 carousel-tablet
 image-hover
-heading-left
-heading-right
+heading-
 section-header
 image-position-mobile-left
 image-position-mobile-right
